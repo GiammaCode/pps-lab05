@@ -1,8 +1,9 @@
 package ex
 
 import util.Optionals.Optional
-import util.Sequences.* // Assuming Sequence and related methods are here
+import util.Sequences.*
 import Sequence.*
+import util.Optionals.Optional.*
 
 // Represents a course offered on the platform
 trait Course:
@@ -100,6 +101,8 @@ object OnlineCoursePlatform:
 
   private class OnlineCoursePlatformImpl extends OnlineCoursePlatform:
     private var cataloge: Sequence[Course] = Nil()
+    private var courses: Sequence[(String, String)] = Nil()
+
     def addCourse(course: Course): Unit =
       cataloge = Cons(course, cataloge)
 
@@ -108,13 +111,26 @@ object OnlineCoursePlatform:
     def getCourse(courseId: String): Optional[Course] =
       cataloge.find(_.courseId == courseId)
     def removeCourse(course: Course): Unit =
-      cataloge.filter(_ != course)
+      cataloge = cataloge.filter(_ != course)
     def isCourseAvailable(courseId: String): Boolean =
       !getCourse(courseId).isEmpty
-    def enrollStudent(studentId: String, courseId: String): Unit = ???
-    def unenrollStudent(studentId: String, courseId: String): Unit = ???
-    def getStudentEnrollments(studentId: String): Sequence[Course] = ???
-    def isStudentEnrolled(studentId: String, courseId: String): Boolean = ???
+    def enrollStudent(studentId: String, courseId: String): Unit =
+      courses = Cons((studentId, courseId), courses)
+    def unenrollStudent(studentId: String, courseId: String): Unit =
+      courses = courses.filter((s,cId) => s != studentId || cId != courseId)
+    def getStudentEnrollments(studentId: String): Sequence[Course] =
+      val enrolledCourseIds = courses
+        .filter((s,_) => s == studentId)
+        .map((_,cId) => cId)
+
+      enrolledCourseIds
+        .flatMap(cId => getCourse(cId) match
+          case Just(course) => Cons(course, Nil())
+          case Empty() => Nil()
+        )
+
+    def isStudentEnrolled(studentId: String, courseId: String): Boolean =
+      courses.contains((studentId,courseId))
 
 /**
  * Represents an online learning platform that offers courses and manages student enrollments.
@@ -153,18 +169,18 @@ object OnlineCoursePlatform:
   val studentAlice = "Alice123"
   val studentBob = "Bob456"
 
- // println(s"Is Alice enrolled in SCALA01? ${platform.isStudentEnrolled(studentAlice, "SCALA01")}") // false
- // platform.enrollStudent(studentAlice, "SCALA01")
- // println(s"Is Alice enrolled in SCALA01? ${platform.isStudentEnrolled(studentAlice, "SCALA01")}") // true
- // platform.enrollStudent(studentAlice, "DESIGN01")
- // platform.enrollStudent(studentBob, "SCALA01") // Bob also enrolls in Scala
+  println(s"Is Alice enrolled in SCALA01? ${platform.isStudentEnrolled(studentAlice, "SCALA01")}") // false
+  platform.enrollStudent(studentAlice, "SCALA01")
+  println(s"Is Alice enrolled in SCALA01? ${platform.isStudentEnrolled(studentAlice, "SCALA01")}") // true
+  platform.enrollStudent(studentAlice, "DESIGN01")
+  platform.enrollStudent(studentBob, "SCALA01") // Bob also enrolls in Scala
 
- // println(s"Alice's enrollments: ${platform.getStudentEnrollments(studentAlice)}") // Sequence(scalaCourse, designCourse) - Order might vary
- // println(s"Bob's enrollments: ${platform.getStudentEnrollments(studentBob)}") // Sequence(scalaCourse)
+  println(s"Alice's enrollments: ${platform.getStudentEnrollments(studentAlice)}") // Sequence(scalaCourse, designCourse) - Order might vary
+  println(s"Bob's enrollments: ${platform.getStudentEnrollments(studentBob)}") // Sequence(scalaCourse)
 
- // platform.unenrollStudent(studentAlice, "SCALA01")
- // println(s"Is Alice enrolled in SCALA01? ${platform.isStudentEnrolled(studentAlice, "SCALA01")}") // false
- // println(s"Alice's enrollments: ${platform.getStudentEnrollments(studentAlice)}") // Sequence(designCourse)
+  platform.unenrollStudent(studentAlice, "SCALA01")
+  println(s"Is Alice enrolled in SCALA01? ${platform.isStudentEnrolled(studentAlice, "SCALA01")}") // false
+  println(s"Alice's enrollments: ${platform.getStudentEnrollments(studentAlice)}") // Sequence(designCourse)
 
   // Removal
   platform.removeCourse(pythonCourse)
