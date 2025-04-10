@@ -14,7 +14,8 @@ trait Course:
 
 object Course:
   // Factory method for creating Course instances
-  def apply(courseId: String, title: String, instructor: String, category: String): Course = CourseImpl(courseId, title, instructor, category)
+  def apply(courseId: String, title: String, instructor: String, category: String): Course =
+    CourseImpl(courseId, title, instructor, category)
 
   private case class CourseImpl(_courseId: String, _title: String, _instructor: String, _category: String) extends Course :
     def courseId: String = _courseId
@@ -22,12 +23,18 @@ object Course:
     def instructor: String = _instructor
     def category: String  = _category
 
+object sameCategory:
+  def unapply(courses: Sequence[Course]): Option[String] = courses match
+    case Nil() => None
+    case Cons(h, t) =>
+      val cat = h.category
+      //filter a different category
+      val allSame = t.find(_.category != cat).isEmpty
+      if allSame then Some(cat) else None
 /**
  * Manages courses and student enrollments on an online learning platform.
  */
 trait OnlineCoursePlatform:
-
-
 
   /**
    * Adds a new course to the platform's catalog.
@@ -186,4 +193,15 @@ object OnlineCoursePlatform:
   platform.removeCourse(pythonCourse)
   println(s"Is PYTHON01 available? ${platform.isCourseAvailable(pythonCourse.courseId)}") // false
   println(s"Programming courses: ${platform.findCoursesByCategory("Programming")}") // Sequence(scalaCourse)
+
+  //to try unapply
+  val coursesSame = Sequence(scalaCourse, scalaCourse, scalaCourse)
+  //val coursesSame = Sequence(scalaCourse, designCourse, scalaCourse)
+
+  coursesSame match
+    case sameCategory(cat) => println("same categories: " + cat)
+    case _ => println("different categories")
+
+
+
 
